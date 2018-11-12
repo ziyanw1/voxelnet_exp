@@ -13,7 +13,7 @@ np.random.seed(0)
 
 DEBUG = False
 VIS = True
-GENERATE_PLY = True
+GENERATE_PLY = False
 POOL_NUM = 8
 MODE = 'validation'
 from config import cfg
@@ -68,7 +68,8 @@ idx_list = np.argwhere(idx_map == 1)
 #sys.exit()
 
 def create_syn_scene_obj(scene_file_name, obj_file_name, scene_idx, generate_ply=GENERATE_PLY, vis=VIS):
-
+    
+    scene_down_sample = 2
     ## parse file
     s_set = scene_file_name.split('/')
     scene_name_ori = s_set[-1][:-4]
@@ -83,6 +84,7 @@ def create_syn_scene_obj(scene_file_name, obj_file_name, scene_idx, generate_ply
     idx = np.squeeze(idx)
     #print(scene_pc[:10])
     scene_pc = scene_pc[idx, :]
+    scene_pc = scene_pc[::scene_down_sample, :]
     #print(scene_pc.shape)
     #print(idx[:10])
     #print(scene_pc[:10])
@@ -94,8 +96,8 @@ def create_syn_scene_obj(scene_file_name, obj_file_name, scene_idx, generate_ply
     #print(np.max(scene_pc[:,2]))
     #print(np.min(scene_pc[:,2]))
     #print(np.mean(scene_pc[:,2]))
-    scene_pc_pcd = np.concatenate((scene_pc[:, :3], np.zeros_like(scene_pc[:, :3])), axis=1)
-    scene_pc_pcd[:, 5] = 255 ## assign green for background
+    #scene_pc_pcd = np.concatenate((scene_pc[:, :3], np.zeros_like(scene_pc[:, :3])), axis=1)
+    #scene_pc_pcd[:, 5] = 255 ## assign green for background
     #sys.exit()
     
     ## sample azim here
@@ -122,7 +124,7 @@ def create_syn_scene_obj(scene_file_name, obj_file_name, scene_idx, generate_ply
     pc_coord.append(ply_data.elements[0].data['y'])
     pc_coord = np.squeeze(np.dstack(pc_coord))
     template_coord = pc_coord.copy()
-    template_coord_pcd = np.concatenate((template_coord, np.zeros_like(template_coord)), axis=1) 
+    #template_coord_pcd = np.concatenate((template_coord, np.zeros_like(template_coord)), axis=1) 
     template_coord = np.concatenate((template_coord, np.zeros((pc_coord.shape[0], 1))), axis=1)
     
     pc_coord *= 4.5 ## scale to real car 
@@ -153,32 +155,32 @@ def create_syn_scene_obj(scene_file_name, obj_file_name, scene_idx, generate_ply
     sample_ratio = np.random.choice(sample_ratios)
     pc_coord = pc_coord[::sample_ratio, ...] 
     
-    pc_coord_pcd = np.concatenate((pc_coord, np.zeros_like(pc_coord)), axis=1)
-    pc_coord_pcd[:, 4] = 255 ## assign red for car
+    #pc_coord_pcd = np.concatenate((pc_coord, np.zeros_like(pc_coord)), axis=1)
+    #pc_coord_pcd[:, 4] = 255 ## assign red for car
     pc_coord = np.concatenate((pc_coord, np.zeros((pc_coord.shape[0], 1))), axis=1)
 
 
     ## create new pc file
-    vertex = np.concatenate((pc_coord_pcd, scene_pc_pcd), axis=0)
+    #vertex = np.concatenate((pc_coord_pcd, scene_pc_pcd), axis=0)
 
     ## dump template model both .ply and .bin
-    obj_outfile_pcd = os.path.join(OBJ_OUT_DIR, scene_name+'.pcd')
-    pcd_from_array(obj_outfile_pcd, template_coord_pcd)
+    #obj_outfile_pcd = os.path.join(OBJ_OUT_DIR, scene_name+'.pcd')
+    #pcd_from_array(obj_outfile_pcd, template_coord_pcd)
     obj_outfile_bin = os.path.join(OBJ_OUT_DIR, scene_name+'.bin')
     template_coord.astype(np.float32).tofile(obj_outfile_bin)
-    if generate_ply:
-        command = './pcl_pcd2ply {} {}'.format(obj_outfile_pcd, obj_outfile_pcd[:-4]+'.ply')
-        os.system(command)
+    #if generate_ply:
+    #    command = './pcl_pcd2ply {} {}'.format(obj_outfile_pcd, obj_outfile_pcd[:-4]+'.ply')
+    #    os.system(command)
 
     ## dump scene with template both p.ly and .bin
-    scene_outfile_pcd = os.path.join(SCENE_OUT_DIR, scene_name+'.pcd')
-    pcd_from_array(scene_outfile_pcd, vertex)
+    #scene_outfile_pcd = os.path.join(SCENE_OUT_DIR, scene_name+'.pcd')
+    #pcd_from_array(scene_outfile_pcd, vertex)
     scene_outfile_bin = os.path.join(SCENE_OUT_DIR, scene_name+'.bin')
     scene_gen_pc = np.concatenate((pc_coord, scene_pc), axis=0)
     scene_gen_pc.astype(np.float32).tofile(scene_outfile_bin)
-    if generate_ply:
-        command = './pcl_pcd2ply {} {}'.format(scene_outfile_pcd, scene_outfile_pcd[:-4]+'.ply')
-        os.system(command)
+    #if generate_ply:
+    #    command = './pcl_pcd2ply {} {}'.format(scene_outfile_pcd, scene_outfile_pcd[:-4]+'.ply')
+    #    os.system(command)
 
     ### for debug
     #load_scene = np.fromfile(scene_outfile_bin, dtype=np.float32).reshape(-1, 4)
@@ -199,7 +201,7 @@ def create_syn_scene_obj(scene_file_name, obj_file_name, scene_idx, generate_ply
     y = camera_boxes[0, 1]
     z = camera_boxes[0, 2]
     ry = camera_boxes[0, 6]
-    label_line = 'Car 0.0 0.0 0.0 -1 -1 -1 -1 {:.02f} {:.02f} {:.02f} {:.02f} {:.02f} {:.02f} {:.02f}\n'.format(
+    label_line = 'Car 0.0 0.0 0.0 10.0 20.0 30.0 50.0 {:.02f} {:.02f} {:.02f} {:.02f} {:.02f} {:.02f} {:.02f}\n'.format(
         h, w, l, x, y, z, ry) 
     #print(label_line)
     #sys.exit()
@@ -265,4 +267,5 @@ if __name__ == "__main__":
         o = os.path.join(OBJ_DIR, obj_list[0])
 
         for s_i in range(SCENE_NUM):
+            print('generating scene {}'.format(s_i))
             create_syn_scene_obj(s, o, s_i, True, True)
